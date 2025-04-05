@@ -7,6 +7,9 @@ const mockUsers = [
   { id: '789012', email: 'admin@example.com', password: 'admin123', name: 'Admin User' }
 ];
 
+// Add to the top of your file
+const tokenStore = new Map();
+
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
@@ -41,7 +44,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login user
+// Update your login route
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -57,8 +60,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
     
-    // Generate token
-    const token = 'mock_jwt_token_' + Math.random().toString(36).substring(2);
+    // Generate token - make it more unique
+    const token = 'mock_jwt_token_' + user.id + '_' + Math.random().toString(36).substring(2);
+    
+    // Store token with user ID
+    tokenStore.set(token, user.id);
+    console.log(`Token created for user ${user.email}:`, token.substring(0, 15) + '...');
     
     // Return user without password
     const { password: _, ...userWithoutPassword } = user;
@@ -73,33 +80,52 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get current user
+// Update your me route to use the token store
 router.get('/me', async (req, res) => {
   try {
-    // In a real app, you would verify the token
-    // For mock implementation, just check if there's an auth header
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'No token provided' });
     }
     
-    // In real app, you'd decode JWT and find user by ID
-    // For mock implementation, just return a sample user
-    res.json({
-      id: '123456',
-      name: 'Test User',
-      email: 'user@example.com'
-    });
+    const token = authHeader.split(' ')[1];
+    const userId = tokenStore.get(token);
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    
+    // Find the user by ID
+    const user = mockUsers.find(u => u.id === userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Return user without password
+    const { password: _, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
   } catch (err) {
     res.status(401).json({ message: 'Not authenticated' });
   }
 });
 
-// Logout user
+// Add a logout route that removes the token
 router.post('/logout', (req, res) => {
-  // Client handles logout by removing token
-  res.json({ success: true });
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      tokenStore.delete(token);
+      console.log('Token removed during logout');
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.json({ success: true });
+  }
 });
 
 module.exports = router;

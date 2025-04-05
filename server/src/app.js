@@ -9,8 +9,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: true, // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
+
+// Debugging middleware to log requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  if (req.headers.authorization) {
+    console.log(`Authorization header present: ${req.headers.authorization.substring(0, 20)}...`);
+  } else {
+    console.log('No Authorization header');
+  }
+  next();
+});
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -29,9 +44,42 @@ const connectDB = async () => {
   }
 };
 
+// Add this to your application setup
+// This will keep track of user sessions even if the server restarts
+
+// Create an in-memory store for tokens
+const tokenStore = new Map();
+
+// Middleware to verify tokens
+const verifyToken = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    
+    // Check if token is in our store
+    const userId = tokenStore.get(token);
+    if (!userId) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    
+    // Add user ID to request
+    req.userId = userId;
+    next();
+  } catch (err) {
+    res.status(401).json({ message: 'Not authenticated' });
+  }
+};
+
 // Routes registration
-app.use('/api/tasks', taskRoutes); // This should match your client API_BASE_URL + '/tasks'
 app.use('/api/auth', authRoutes);
+
+// For protected routes, use the verifyToken middleware
+app.use('/api/tasks', verifyToken, taskRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
