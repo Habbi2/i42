@@ -94,6 +94,11 @@ The project is divided into two main parts: the client (front-end) and the serve
 npm test
 ```
 
+2. Run client-side tests:
+```
+npm test
+```
+
 ### Usage
 
 - Access the application in your browser at `http://localhost:3000` (or the port specified in your server configuration).
