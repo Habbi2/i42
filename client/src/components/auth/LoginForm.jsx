@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './Auth.css';
 
 const LoginForm = () => {
     const { login } = useAuth();
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -15,10 +17,14 @@ const LoginForm = () => {
         setIsLoading(true);
         
         try {
+            // Call the auth context login function
             await login(email, password);
-            // Successful login will redirect via AuthContext
+            
+            // If login succeeded, redirect to dashboard
+            navigate('/dashboard');
         } catch (err) {
-            setError('Failed to log in. Please check your credentials.');
+            // Show error from the server
+            setError(err.message || 'Failed to log in. Please check your credentials.');
         } finally {
             setIsLoading(false);
         }
@@ -69,9 +75,6 @@ const LoginForm = () => {
                 >
                     {isLoading ? 'Signing in...' : 'Sign in'}
                 </button>
-                
-                <div className="auth-options">
-                </div>
             </form>
         </div>
     );
