@@ -329,4 +329,39 @@
     cursor: not-allowed;
     text-decoration: none;
   }
-  
+
+/* Add this to your Auth.css file if not already present */
+.auth-success {
+  background-color: #ecfdf5;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #047857;
+  border-left: 4px solid #047857;
+  display: flex;
+  align-items: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.auth-success:before {
+  content: "✓";
+  font-weight: bold;
+  margin-right: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.auth-error {
+  background-color: #fef2f2;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #dc2626;
+  border-left: 4px solid #dc2626;
+}
+
+/* Add this to your existing CSS */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

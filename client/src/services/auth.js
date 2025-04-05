@@ -1,90 +1,132 @@
 import axios from 'axios';
 
-// Consistent API URL
-const API_BASE_URL = 'http://localhost:5000/api';
-const AUTH_URL = `${API_BASE_URL}/auth`;
+// API URL
+const API_URL = 'http://localhost:5000/api/auth';
 
-// Authentication service functions
-export const loginUser = async (email, password) => {
-  try {
-    const response = await fetch(`${AUTH_URL}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+// Store the current mock users to ensure sync with server
+let localMockUsers = [];
 
-    // Check if the response is not OK (4xx or 5xx status)
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Login failed');
-    }
+// Get the existing token
+export const getToken = () => localStorage.getItem('authToken');
 
-    // If response is OK, parse the data
-    const data = await response.json();
-    
-    // Store token in localStorage - use consistent name
-    localStorage.setItem('authToken', data.token);
-    
-    return data;
-  } catch (error) {
-    console.error('Login error:', error);
-    throw error; // Re-throw to let components handle it
-  }
-};
-
-export const registerUser = async (userData) => {
-  try {
-    const response = await fetch(`${AUTH_URL}/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Registration failed');
-    }
-
-    const data = await response.json();
-    
-    // Don't automatically log in after registration
-    // Let the user log in explicitly with their credentials
-    return data;
-  } catch (error) {
-    console.error('Registration error:', error);
-    throw error;
-  }
-};
-
+// Get current user info from token
 export const getCurrentUser = async () => {
   try {
-    const token = localStorage.getItem('authToken'); // Use consistent name
-    if (!token) return null;
-    
-    const response = await fetch(`${AUTH_URL}/me`, {
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      console.log('Auth Service: No token found');
+      return null;
+    }
+
+    console.log('Auth Service: Fetching current user with token');
+    const response = await fetch(`${API_URL}/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
     });
 
     if (!response.ok) {
+      console.error('Auth Service: Failed to get user data', response.status);
       throw new Error('Failed to get user data');
     }
 
-    return await response.json();
+    const userData = await response.json();
+    console.log('Auth Service: User data retrieved successfully');
+    return userData;
   } catch (error) {
-    console.error('Get current user error:', error);
-    localStorage.removeItem('authToken'); // Use consistent name
+    console.error('Auth Service: Error getting current user', error);
+    // On error, clear the invalid token
+    localStorage.removeItem('authToken');
     return null;
   }
 };
 
+// Login user and get token
+export const loginUser = async (email, password) => {
+  try {
+    console.log(`Auth Service: Logging in ${email}`);
+    const response = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Auth Service: Login failed', response.status);
+      throw new Error(errorData.message || 'Login failed');
+    }
+
+    const data = await response.json();
+    console.log('Auth Service: Login successful, token received');
+    
+    // Store the token
+    if (data.token) {
+      localStorage.setItem('authToken', data.token);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Auth Service: Login error', error);
+    throw error;
+  }
+};
+
+// Register new user
+export const registerUser = async (userData) => {
+  try {
+    console.log('Auth Service: Registering new user');
+    const response = await fetch(`${API_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Auth Service: Registration failed', response.status);
+      throw new Error(errorData.message || 'Registration failed');
+    }
+
+    const data = await response.json();
+    console.log('Auth Service: Registration successful');
+    return data;
+  } catch (error) {
+    console.error('Auth Service: Registration error', error);
+    throw error;
+  }
+};
+
+// Logout user
 export const logoutUser = async () => {
-  localStorage.removeItem('authToken'); // Use consistent name
-  return { success: true };
+  try {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      console.log('Auth Service: Sending logout request');
+      await fetch(`${API_URL}/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    }
+    
+    console.log('Auth Service: Removing auth token');
+    localStorage.removeItem('authToken');
+    return { success: true };
+  } catch (error) {
+    console.error('Auth Service: Logout error', error);
+    // Still clear token on error
+    localStorage.removeItem('authToken');
+    return { success: true };
+  }
+};
+
+// Check if user is authenticated
+export const isAuthenticated = () => {
+  return !!localStorage.getItem('authToken');
 };

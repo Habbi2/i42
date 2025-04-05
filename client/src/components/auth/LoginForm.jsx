@@ -1,82 +1,77 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import './Auth.css';
 
-const LoginForm = () => {
-    const { login } = useAuth();
-    const navigate = useNavigate();
-    const [email, setEmail] = useState('');
+const LoginForm = ({ onSubmit, loading, initialEmail = '' }) => {
+    const [email, setEmail] = useState(initialEmail);
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    
+    // When initialEmail changes (like after registration), update the state
+    useEffect(() => {
+        if (initialEmail) {
+            setEmail(initialEmail);
+        }
+    }, [initialEmail]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setIsLoading(true);
         
         try {
-            // Call the auth context login function
-            await login(email, password);
-            
-            // If login succeeded, redirect to dashboard
-            navigate('/dashboard');
+            await onSubmit({ email, password });
+            // If login successful, the parent component will handle redirection
         } catch (err) {
-            // Show error from the server
             setError(err.message || 'Failed to log in. Please check your credentials.');
-        } finally {
-            setIsLoading(false);
         }
     };
 
     return (
-        <div className="auth-form-container">
+        <form onSubmit={handleSubmit} className="auth-form">
             {error && <div className="error-message">{error}</div>}
             
-            <form onSubmit={handleSubmit} className="auth-form">
-                <div className="form-group">
-                    <label htmlFor="email">Email</label>
+            <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    className="form-input"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                    autoComplete="email"
+                />
+            </div>
+            
+            <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <div className="password-input-container">
                     <input
-                        type="email"
-                        id="email"
+                        type="password"
+                        id="password"
                         className="form-input"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         required
-                        disabled={isLoading}
+                        disabled={loading}
+                        autoComplete="current-password"
                     />
                 </div>
-                
-                <div className="form-group">
-                    <label htmlFor="password">Password</label>
-                    <div className="password-input-container">
-                        <input
-                            type="password"
-                            id="password"
-                            className="form-input"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div className="forgot-password">
-                        <a href="/forgot-password" className="forgot-link">Forgot password?</a>
-                    </div>
+                <div className="forgot-password">
+                    <a href="/forgot-password" className="forgot-link">Forgot password?</a>
                 </div>
-                
-                <button 
-                    type="submit" 
-                    className={`submit-button ${isLoading ? 'loading' : ''}`}
-                    disabled={isLoading}
-                >
-                    {isLoading ? 'Signing in...' : 'Sign in'}
-                </button>
-            </form>
-        </div>
+            </div>
+            
+            <button 
+                type="submit" 
+                className={`submit-button ${loading ? 'loading' : ''}`}
+                disabled={loading}
+            >
+                {loading ? 'Signing in...' : 'Sign in'}
+            </button>
+        </form>
     );
 };
 

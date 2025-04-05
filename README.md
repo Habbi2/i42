@@ -68,6 +68,11 @@ The project is divided into two main parts: the client (front-end) and the serve
    npm install
    ```
 
+3. Run all tests from the root directory:
+   ```
+   npm test
+   ```
+
 ### Running the Application
 
 1. Start the server:
@@ -81,6 +86,13 @@ The project is divided into two main parts: the client (front-end) and the serve
    cd client
    npm run dev
    ```
+
+### Running Tests
+
+1. Run server-side tests:
+```
+npm test
+```
 
 ### Usage
 

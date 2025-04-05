@@ -6,12 +6,13 @@ import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import TaskDetails from './pages/TaskDetails';
 import Auth from './pages/Auth';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const App = () => {
   const { currentUser, loading } = useAuth();
   
   if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
+    return <div className="app-loading">Loading...</div>;
   }
 
   return (
@@ -20,18 +21,32 @@ const App = () => {
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route 
-            path="/dashboard" 
-            element={currentUser ? <Dashboard /> : <Navigate to="/auth" />} 
-          />
-          <Route 
-            path="/tasks/:id" 
-            element={currentUser ? <TaskDetails /> : <Navigate to="/auth" />} 
-          />
+          
+          {/* Auth routes - redirect to dashboard if already logged in */}
           <Route 
             path="/auth" 
-            element={!currentUser ? <Auth /> : <Navigate to="/dashboard" />} 
+            element={!currentUser ? <Auth initialView="login" /> : <Navigate to="/dashboard" />} 
           />
+          <Route 
+            path="/auth/login" 
+            element={!currentUser ? <Auth initialView="login" /> : <Navigate to="/dashboard" />} 
+          />
+          <Route 
+            path="/auth/register" 
+            element={!currentUser ? <Auth initialView="register" /> : <Navigate to="/dashboard" />} 
+          />
+          
+          {/* Protected routes - require authentication */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/tasks/:id" element={
+            <ProtectedRoute>
+              <TaskDetails />
+            </ProtectedRoute>
+          } />
         </Routes>
       </main>
     </>
